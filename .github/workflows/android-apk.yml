@@ -1,11 +1,11 @@
 name: Build Arab Chat APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
       - master
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,14 +15,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Download source code
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
 
       - name: Create Android project
-        run: flutter
+        run: flutter create --platforms=android --org com.arabchat build_project
+
+      - name: Copy application files
+        run: |
+          cp pubspec.yaml build_project/pubspec.yaml
+          cp -r lib/. build_project/lib/
+
+      - name: Get dependencies
+        working-directory: build_project
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: build_project
+        run: flutter build apk --release
+
+      - name: Upload APK for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Arab-Chat-APK
+          path: build_project/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
